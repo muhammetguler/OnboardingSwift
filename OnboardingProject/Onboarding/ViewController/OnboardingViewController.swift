@@ -7,14 +7,14 @@ class OnboardingViewController: UIViewController {
     private let collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .horizontal
-        layout.minimumLineSpacing = 0
+        layout.minimumLineSpacing = 15
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.isPagingEnabled = false
         collectionView.bounces = true // Enable bounce effect
-        collectionView.alwaysBounceHorizontal = true // Enable horizontal bounce
         collectionView.isScrollEnabled = true // Enable scrolling
         collectionView.showsHorizontalScrollIndicator = false
         collectionView.translatesAutoresizingMaskIntoConstraints = false
+        collectionView.backgroundColor = .white
         return collectionView
     }()
 
@@ -116,43 +116,65 @@ extension OnboardingViewController: UICollectionViewDelegate, UICollectionViewDa
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "OnboardingCell", for: indexPath) as! OnboardingCell
         let slide = viewModel.getSlide(at: indexPath.item)
         cell.configure(with: slide.image)
-        // Debugging print
-        print("Cell frame: \(cell.frame)")
+
+        if viewModel.currentSlideIndex == indexPath.item {
+            cell.transformToLarge()
+        }
+        
         return cell
     }
     
-    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
-        guard let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout else { return }
-        
-        // Width of each cell including spacing
-        let cellWidthIncludingSpacing = layout.itemSize.width + layout.minimumLineSpacing
-        
-        // Proposed offset after dragging ends
-        let proposedContentOffsetX = targetContentOffset.pointee.x
-        
-        // Calculate the nearest index based on the content offset
-        let nearestIndex = round((proposedContentOffsetX + scrollView.contentInset.left) / cellWidthIncludingSpacing)
-        
-        // Adjust the target content offset to snap the nearest cell to the center
-        let adjustedOffsetX = nearestIndex * cellWidthIncludingSpacing - scrollView.contentInset.left
-        targetContentOffset.pointee = CGPoint(x: adjustedOffsetX, y: 0)
-        
-        // Update page control and content
-        viewModel.updateCurrentPage(to: Int(nearestIndex))
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        let currentCell = collectionView.cellForItem(at: IndexPath(row: Int(viewModel.currentSlideIndex), section: 0))
+        currentCell?.transformToStandard()
     }
-
-    func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        guard let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout else { return }
-        let centerX = collectionView.bounds.size.width / 2
-        let offsetX = collectionView.contentOffset.x
-
-        for cell in collectionView.visibleCells {
-            let cellCenterX = cell.center.x - offsetX
-            let distance = abs(centerX - cellCenterX)
-            let maxDistance = layout.itemSize.width + layout.minimumLineSpacing
-            let scale = max(1 - (distance / maxDistance), 0.5) // Minimum scale factor
-            cell.transform = CGAffineTransform(scaleX: scale, y: scale)
+    
+    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+            
+        guard scrollView == collectionView else {
+            return
         }
+        
+        // Changing content offset to where the collection view stops scrolling
+        targetContentOffset.pointee = scrollView.contentOffset
+        
+        guard let flowLayout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout else { return }
+        let cellWidthIncludingSpacing = flowLayout.itemSize.width + flowLayout.minimumLineSpacing
+        let offset = targetContentOffset.pointee
+        let horizontalVelocity = velocity.x
+        
+        var selectedIndex = viewModel.currentSlideIndex
+        
+        switch horizontalVelocity {
+        // On user swiping
+        case _ where horizontalVelocity > 0 :
+            selectedIndex = viewModel.currentSlideIndex + 1
+        case _ where horizontalVelocity < 0:
+            selectedIndex = viewModel.currentSlideIndex - 1
+            
+        // On user dragging
+        case _ where horizontalVelocity == 0:
+            let index = (offset.x + scrollView.contentInset.left) / cellWidthIncludingSpacing
+            let roundedIndex = round(index)
+            
+            selectedIndex = Int(roundedIndex)
+        default:
+            print("Incorrect velocity for collection view")
+        }
+        
+        let safeIndex = max(0, min(selectedIndex, viewModel.getSlideCount() - 1))
+        let selectedIndexPath = IndexPath(row: safeIndex, section: 0)
+        
+        flowLayout.collectionView!.scrollToItem(at: selectedIndexPath, at: .centeredHorizontally, animated: true)
+        
+        let previousSelectedIndex = IndexPath(row: Int(viewModel.currentSlideIndex), section: 0)
+        let previousSelectedCell = collectionView.cellForItem(at: previousSelectedIndex)
+        let nextSelectedCell = collectionView.cellForItem(at: selectedIndexPath)
+        
+        viewModel.updateCurrentPage(to: selectedIndexPath.row)
+        
+        previousSelectedCell?.transformToStandard()
+        nextSelectedCell?.transformToLarge()
     }
     
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
@@ -187,17 +209,34 @@ extension OnboardingViewController {
         print("Collection View Frame: \(collectionView.frame)")
 
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-            // Set the item size to be 80% of the collection view's width
-            layout.itemSize = CGSize(width: collectionView.frame.width / 2.04, height: collectionView.frame.height)
+            layout.itemSize = CGSize(width: (collectionView.frame.height/1.25)/2.04, height: collectionView.frame.height/1.25)
             
-            layout.minimumLineSpacing = 0
+            let peekingItemWidth = layout.itemSize.width / 10
 
             // Calculate horizontal insets to center the first and last cells
             let horizontalInset = (collectionView.frame.width - layout.itemSize.width) / 2
             collectionView.contentInset = UIEdgeInsets(top: 0, left: horizontalInset, bottom: 0, right: horizontalInset)
+            
+            layout.minimumLineSpacing = horizontalInset - peekingItemWidth
+
             layout.invalidateLayout()
         }
     }
+}
+
+extension UICollectionViewCell {
+    func transformToLarge() {
+        UIView.animate(withDuration: 0.2) {
+            self.transform = CGAffineTransform(scaleX: 1.2, y: 1.2)
+        }
+    }
+    
+    func transformToStandard() {
+        UIView.animate(withDuration: 0.2) {
+            self.transform = CGAffineTransform.identity
+        }
+    }
+    
 }
 
 /*
