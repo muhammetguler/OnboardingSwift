@@ -11,10 +11,10 @@ class OnboardingViewController: UIViewController {
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.isPagingEnabled = false
         collectionView.bounces = true // Enable bounce effect
-        collectionView.alwaysBounceHorizontal = true // Enable horizontal bounce
         collectionView.isScrollEnabled = true // Enable scrolling
         collectionView.showsHorizontalScrollIndicator = false
         collectionView.translatesAutoresizingMaskIntoConstraints = false
+        collectionView.backgroundColor = .white
         return collectionView
     }()
 
@@ -188,7 +188,7 @@ extension OnboardingViewController {
 
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
             // Set the item size to be 80% of the collection view's width
-            layout.itemSize = CGSize(width: collectionView.frame.width / 2.04, height: collectionView.frame.height)
+            layout.itemSize = CGSize(width: collectionView.frame.height / 2.04, height: collectionView.frame.height)
             
             layout.minimumLineSpacing = 0
 
