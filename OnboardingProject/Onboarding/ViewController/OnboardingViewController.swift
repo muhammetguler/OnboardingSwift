@@ -5,9 +5,7 @@ class OnboardingViewController: UIViewController {
     private var viewModel = OnboardingViewModel()
 
     private let collectionView: UICollectionView = {
-        let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = .horizontal
-        layout.minimumLineSpacing = 15
+        let layout = CardsCollectionFlowLayout() // Use custom layout class
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.isPagingEnabled = false
         collectionView.bounces = true // Enable bounce effect
@@ -117,7 +115,7 @@ extension OnboardingViewController: UICollectionViewDelegate, UICollectionViewDa
         let slide = viewModel.getSlide(at: indexPath.item)
         cell.configure(with: slide.image)
 
-        if viewModel.currentSlideIndex == indexPath.item {
+        if indexPath.item == viewModel.currentSlideIndex {
             cell.transformToLarge()
         }
         
@@ -138,7 +136,7 @@ extension OnboardingViewController: UICollectionViewDelegate, UICollectionViewDa
         // Changing content offset to where the collection view stops scrolling
         targetContentOffset.pointee = scrollView.contentOffset
         
-        guard let flowLayout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout else { return }
+        guard let flowLayout = collectionView.collectionViewLayout as? CardsCollectionFlowLayout else { return }
         let cellWidthIncludingSpacing = flowLayout.itemSize.width + flowLayout.minimumLineSpacing
         let offset = targetContentOffset.pointee
         let horizontalVelocity = velocity.x
@@ -197,33 +195,6 @@ extension OnboardingViewController: UICollectionViewDelegate, UICollectionViewDa
     }
 }
 
-extension OnboardingViewController {
-    override func viewWillLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        
-        print("Collection View Frame: \(collectionView.frame)") // Collection View Frame: (0.0, 0.0, 0.0, 0.0)
-        
-        // Ensure the collection view has the correct frame
-        collectionView.layoutIfNeeded()
-        
-        print("Collection View Frame: \(collectionView.frame)")
-
-        if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-            layout.itemSize = CGSize(width: (collectionView.frame.height/1.25)/2.04, height: collectionView.frame.height/1.25)
-            
-            let peekingItemWidth = layout.itemSize.width / 10
-
-            // Calculate horizontal insets to center the first and last cells
-            let horizontalInset = (collectionView.frame.width - layout.itemSize.width) / 2
-            collectionView.contentInset = UIEdgeInsets(top: 0, left: horizontalInset, bottom: 0, right: horizontalInset)
-            
-            layout.minimumLineSpacing = horizontalInset - peekingItemWidth
-
-            layout.invalidateLayout()
-        }
-    }
-}
-
 extension UICollectionViewCell {
     func transformToLarge() {
         UIView.animate(withDuration: 0.2) {
@@ -239,15 +210,25 @@ extension UICollectionViewCell {
     
 }
 
-/*
- 
- Example: Why It’s Needed in Your Case
- Without layoutIfNeeded():
+class CardsCollectionFlowLayout: UICollectionViewFlowLayout {
+    private let itemHeight = 150
+    private let itemWidth = 225
+    
+    // The prepare() methodis called to tell the collection view layout object to update the current layout.
+    // Layout updates occur the first time the collection view presents its content and whenever the layout is invalidated.
 
- The collection view's frame might still be CGRect.zero (default frame) when viewDidLayoutSubviews is called for the first time, which causes the UICollectionViewFlowLayout to calculate an incorrect itemSize.
- 
- With layoutIfNeeded():
+    override func prepare() {
+        guard let collectionView = collectionView else { return }
+        
+        scrollDirection = .horizontal
+        itemSize = CGSize(width: (collectionView.frame.height/1.25)/2.04, height: collectionView.frame.height/1.25)
+        
+        let peekingItemWidth = itemSize.width / 3
+        let horizontalInsets = (collectionView.frame.size.width - itemSize.width) / 2
+        
+        collectionView.contentInset = UIEdgeInsets(top: 0, left: horizontalInsets, bottom: 0, right: horizontalInsets)
+        minimumLineSpacing = horizontalInsets - peekingItemWidth
+    }
+    
+}
 
- The collection view forces its layout pass and resolves its constraints, updating its frame before you use it to calculate itemSize.
- 
- */
