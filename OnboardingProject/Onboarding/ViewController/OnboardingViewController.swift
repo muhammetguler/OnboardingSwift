@@ -137,21 +137,21 @@ extension OnboardingViewController: UICollectionViewDelegate, UICollectionViewDa
         targetContentOffset.pointee = scrollView.contentOffset
         
         guard let flowLayout = collectionView.collectionViewLayout as? CardsCollectionFlowLayout else { return }
-        let cellWidthIncludingSpacing = flowLayout.itemSize.width + flowLayout.minimumLineSpacing
-        let offset = targetContentOffset.pointee
-        let horizontalVelocity = velocity.x
+        let cellWidthIncludingSpacing = flowLayout.itemSize.width + flowLayout.minimumLineSpacing // This value is used to calculate how far the collection view should scroll to center a cell.
+        let offset = targetContentOffset.pointee // offset gets the current stopping point of the collection view.
+        let horizontalVelocity = velocity.x // horizontalVelocity measures how fast the user swiped horizontally.
         
         var selectedIndex = viewModel.currentSlideIndex
         
         switch horizontalVelocity {
         // On user swiping
-        case _ where horizontalVelocity > 0 :
+        case _ where horizontalVelocity > 0 : // swipe right: move to the next slide.
             selectedIndex = viewModel.currentSlideIndex + 1
-        case _ where horizontalVelocity < 0:
+        case _ where horizontalVelocity < 0: // swipe left: move to the previous slide.
             selectedIndex = viewModel.currentSlideIndex - 1
             
         // On user dragging
-        case _ where horizontalVelocity == 0:
+        case _ where horizontalVelocity == 0: // Snap to the nearest cell using the offset and cellWidthIncludingSpacing.
             let index = (offset.x + scrollView.contentInset.left) / cellWidthIncludingSpacing
             let roundedIndex = round(index)
             
@@ -160,16 +160,17 @@ extension OnboardingViewController: UICollectionViewDelegate, UICollectionViewDa
             print("Incorrect velocity for collection view")
         }
         
-        let safeIndex = max(0, min(selectedIndex, viewModel.getSlideCount() - 1))
+        let safeIndex = max(0, min(selectedIndex, viewModel.getSlideCount() - 1)) // Ensures that selectedIndex does not exceed the bounds of the available slides:
         let selectedIndexPath = IndexPath(row: safeIndex, section: 0)
         
-        flowLayout.collectionView!.scrollToItem(at: selectedIndexPath, at: .centeredHorizontally, animated: true)
+        flowLayout.collectionView!.scrollToItem(at: selectedIndexPath, at: .centeredHorizontally, animated: true) // Scrolls the collection view to center the cell at the calculated index.
         
         let previousSelectedIndex = IndexPath(row: Int(viewModel.currentSlideIndex), section: 0)
         let previousSelectedCell = collectionView.cellForItem(at: previousSelectedIndex)
         let nextSelectedCell = collectionView.cellForItem(at: selectedIndexPath)
         
         viewModel.updateCurrentPage(to: selectedIndexPath.row)
+        pageControl.currentPage = selectedIndexPath.row
         
         previousSelectedCell?.transformToStandard()
         nextSelectedCell?.transformToLarge()
@@ -211,9 +212,6 @@ extension UICollectionViewCell {
 }
 
 class CardsCollectionFlowLayout: UICollectionViewFlowLayout {
-    private let itemHeight = 150
-    private let itemWidth = 225
-    
     // The prepare() methodis called to tell the collection view layout object to update the current layout.
     // Layout updates occur the first time the collection view presents its content and whenever the layout is invalidated.
 
