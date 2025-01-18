@@ -13,7 +13,7 @@ class OnboardingViewModel {
     // Slides Data
     private(set) var slides: [OnboardingSlide] = [
         OnboardingSlide(image: "onboardingBackground1", title: "DOKUN DENE, MOBİLDEN EVE", description: "Mağazada beğendiğin ürünün bedeni yok mu? Barkodu okut istediğin bedeni sipariş ver."),
-        OnboardingSlide(image: "onboardingBackground3", title: "ÜYE OL, FIRSATLARI KAÇIRMA", description: "Sende şimdi bize katıl, 375 TL'ye 125 TL alışveriş indirimi ve ilk siparişe özel ücretsiz kargo fırsatını kaçırma.")
+        OnboardingSlide(image: "onboardingBackground3", title: "ÜYE OL, FIRSATLARI KAÇIRMA", description: "Mağazada beğendiğin ürünün bedeni yok mu? Barkodu okut istediğin bedeni sipariş ver.")
     ]
     
     // Current Slide Index
