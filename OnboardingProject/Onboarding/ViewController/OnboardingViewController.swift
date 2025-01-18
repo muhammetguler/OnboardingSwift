@@ -8,9 +8,11 @@ class OnboardingViewController: UIViewController {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .horizontal
         layout.minimumLineSpacing = 0
-        layout.minimumInteritemSpacing = 0
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        collectionView.isPagingEnabled = true
+        collectionView.isPagingEnabled = false
+        collectionView.bounces = true // Enable bounce effect
+        collectionView.alwaysBounceHorizontal = true // Enable horizontal bounce
+        collectionView.isScrollEnabled = true // Enable scrolling
         collectionView.showsHorizontalScrollIndicator = false
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         return collectionView
@@ -119,28 +121,16 @@ extension OnboardingViewController: UICollectionViewDelegate, UICollectionViewDa
         return cell
     }
     
-    func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        let center = view.frame.size.width / 2 + scrollView.contentOffset.x
-        
-        // Loop through visible cells
-        for cell in collectionView.visibleCells {
-            guard let indexPath = collectionView.indexPath(for: cell),
-                  let onboardingCell = cell as? OnboardingCell else { continue }
-            
-            let cellCenter = onboardingCell.center.x
-            let distance = abs(center - cellCenter)
-            
-            // Define the maximum distance for scaling
-            let maxDistance = collectionView.frame.width
-            let scale = max(1 - distance / maxDistance, 0.5) // Minimum scale is 0.5
-            
-            onboardingCell.transform = CGAffineTransform(scaleX: scale, y: scale)
-        }
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        setOnboardPageData(indexPath.item)
     }
-    
-    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        let pageIndex = Int(scrollView.contentOffset.x / collectionView.frame.width)
-        viewModel.updateCurrentPage(to: pageIndex)
+
+    func setOnboardPageData(_ currentIndex: Int, _ ischangeScrollPosition: Bool = true) {
+        pageControl.currentPage = currentIndex
+        collectionView.reloadData()
+
+        guard ischangeScrollPosition else { return }
+        collectionView.scrollToItem(at: IndexPath(item: currentIndex, section: 0), at: .centeredHorizontally, animated: ischangeScrollPosition)
     }
 }
 
@@ -156,7 +146,15 @@ extension OnboardingViewController {
         print("Collection View Frame: \(collectionView.frame)")
 
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-            layout.itemSize = CGSize(width: collectionView.frame.height/2.04, height: collectionView.frame.height)
+            // Set the item size to be 80% of the collection view's width
+            layout.itemSize = CGSize(width: collectionView.frame.width / 2.04, height: collectionView.frame.height)
+            
+            layout.minimumLineSpacing = 0
+
+            // Calculate horizontal insets to center the first and last cells
+            let horizontalInset = (collectionView.frame.width - layout.itemSize.width) / 2
+            collectionView.contentInset = UIEdgeInsets(top: 0, left: horizontalInset, bottom: 0, right: horizontalInset)
+            layout.invalidateLayout()
         }
     }
 }
