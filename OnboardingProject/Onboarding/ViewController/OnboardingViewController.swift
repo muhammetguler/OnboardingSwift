@@ -121,6 +121,47 @@ extension OnboardingViewController: UICollectionViewDelegate, UICollectionViewDa
         return cell
     }
     
+    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        guard let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout else { return }
+        
+        // Width of each cell including spacing
+        let cellWidthIncludingSpacing = layout.itemSize.width + layout.minimumLineSpacing
+        
+        // Proposed offset after dragging ends
+        let proposedContentOffsetX = targetContentOffset.pointee.x
+        
+        // Calculate the nearest index based on the content offset
+        let nearestIndex = round((proposedContentOffsetX + scrollView.contentInset.left) / cellWidthIncludingSpacing)
+        
+        // Adjust the target content offset to snap the nearest cell to the center
+        let adjustedOffsetX = nearestIndex * cellWidthIncludingSpacing - scrollView.contentInset.left
+        targetContentOffset.pointee = CGPoint(x: adjustedOffsetX, y: 0)
+        
+        // Update page control and content
+        viewModel.updateCurrentPage(to: Int(nearestIndex))
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout else { return }
+        let centerX = collectionView.bounds.size.width / 2
+        let offsetX = collectionView.contentOffset.x
+
+        for cell in collectionView.visibleCells {
+            let cellCenterX = cell.center.x - offsetX
+            let distance = abs(centerX - cellCenterX)
+            let maxDistance = layout.itemSize.width + layout.minimumLineSpacing
+            let scale = max(1 - (distance / maxDistance), 0.5) // Minimum scale factor
+            cell.transform = CGAffineTransform(scaleX: scale, y: scale)
+        }
+    }
+    
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        let centerOffset = collectionView.contentOffset.x + collectionView.frame.size.width / 2
+        if let indexPath = collectionView.indexPathForItem(at: CGPoint(x: centerOffset, y: collectionView.frame.size.height / 2)) {
+            print("Centered Cell Index: \(indexPath.item)")
+        }
+    }
+    
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         setOnboardPageData(indexPath.item)
     }
