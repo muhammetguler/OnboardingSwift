@@ -1,0 +1,15 @@
+{
+  "originHash" : "0cbcf0b524b253598bc67a9052771421c287b3f877f040d244ce446d66c32a3b",
+  "pins" : [
+    {
+      "identity" : "advancedpagecontrol?tab=readme-ov-file",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mohn93/AdvancedPageControl?tab=readme-ov-file",
+      "state" : {
+        "revision" : "0dbe238ed2be3d46fb255e63c94e1e7ffd10b460",
+        "version" : "0.9.0"
+      }
+    }
+  ],
+  "version" : 3
+}

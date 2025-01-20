@@ -1,7 +1,8 @@
 import UIKit
+import AdvancedPageControl
 
 class OnboardingViewController: UIViewController {
-
+        
     private var viewModel = OnboardingViewModel()
 
     private let collectionView: UICollectionView = {
@@ -15,15 +16,21 @@ class OnboardingViewController: UIViewController {
         collectionView.backgroundColor = .white
         return collectionView
     }()
-
-    private let pageControl: UIPageControl = {
-        let pageControl = UIPageControl()
-        pageControl.currentPage = 0
-        pageControl.pageIndicatorTintColor = .lightGray
-        pageControl.currentPageIndicatorTintColor = .blue
+    
+    private let advancedPageControlView: AdvancedPageControlView = {
+        let pageControl = AdvancedPageControlView()
         pageControl.translatesAutoresizingMaskIntoConstraints = false
         return pageControl
     }()
+
+//    private let pageControl: UIPageControl = {
+//        let pageControl = UIPageControl()
+//        pageControl.currentPage = 0
+//        pageControl.pageIndicatorTintColor = .lightGray
+//        pageControl.currentPageIndicatorTintColor = .blue
+//        pageControl.translatesAutoresizingMaskIntoConstraints = false
+//        return pageControl
+//    }()
     
     private let titleLabel: UILabel = {
         let label = UILabel()
@@ -57,8 +64,18 @@ class OnboardingViewController: UIViewController {
         view.addSubview(titleLabel)
         view.addSubview(descriptionLabel)
         view.addSubview(collectionView)
-        view.addSubview(pageControl)
-
+        view.addSubview(advancedPageControlView)
+        
+        advancedPageControlView.drawer = ExtendedDotDrawer(numberOfPages: 2,
+                                                space: 16.0,
+                                                indicatorColor: UIColor.green,
+                                                dotsColor: .gray,
+                                                isBordered: false,
+                                                borderWidth: 0.0,
+                                                indicatorBorderColor: .clear,
+                                                indicatorBorderWidth: 0.0)
+        
+        
         collectionView.delegate = self
         collectionView.dataSource = self
         collectionView.register(OnboardingCell.self, forCellWithReuseIdentifier: "OnboardingCell")
@@ -82,11 +99,12 @@ class OnboardingViewController: UIViewController {
             collectionView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.5), // Adjust height as needed
 
             // Page Control below collection view
-            pageControl.topAnchor.constraint(equalTo: collectionView.bottomAnchor, constant: 20),
-            pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            advancedPageControlView.topAnchor.constraint(equalTo: collectionView.bottomAnchor, constant: 20),
+            advancedPageControlView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            advancedPageControlView.widthAnchor.constraint(equalTo: self.view.widthAnchor)
         ])
 
-        pageControl.numberOfPages = viewModel.getSlideCount()
+        advancedPageControlView.numberOfPages = viewModel.getSlideCount()
         
         updateLabels(for: 0)
     }
@@ -170,7 +188,7 @@ extension OnboardingViewController: UICollectionViewDelegate, UICollectionViewDa
         let nextSelectedCell = collectionView.cellForItem(at: selectedIndexPath)
         
         viewModel.updateCurrentPage(to: selectedIndexPath.row)
-        pageControl.currentPage = selectedIndexPath.row
+        advancedPageControlView.setPage(selectedIndexPath.row)
         
         previousSelectedCell?.transformToStandard()
         nextSelectedCell?.transformToLarge()
@@ -188,7 +206,7 @@ extension OnboardingViewController: UICollectionViewDelegate, UICollectionViewDa
     }
 
     func setOnboardPageData(_ currentIndex: Int, _ ischangeScrollPosition: Bool = true) {
-        pageControl.currentPage = currentIndex
+        advancedPageControlView.setPage(currentIndex)
         collectionView.reloadData()
 
         guard ischangeScrollPosition else { return }
